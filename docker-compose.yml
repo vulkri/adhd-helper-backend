@@ -1,0 +1,52 @@
+services:
+  backend:
+    container_name: "adhd-helper-backend"
+    user: $HOST_UID:$HOST_GID
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile
+      args:
+        UID: $HOST_UID
+        GID: $HOST_GID
+
+    volumes:
+      - ./backend:/home/nonroot/app
+      - ./deployment/scripts:/home/nonroot/deployment/scripts
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_started
+      
+    command: [ "/bin/sh", "/home/nonroot/deployment/scripts/backend/start.sh" ]
+
+  db:
+    image: postgres
+    container_name: ${POSTGRES_HOST}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: "${POSTGRES_PASS}"
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    volumes:
+      - pgdata:/var/lib/posgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - ${PGADMIN_PORT}:80
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    depends_on:
+      - db
+
+
+
+volumes:
+  pgdata:
+  pgadmin:
